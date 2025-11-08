@@ -20,7 +20,15 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # SECURITY
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    '10.10.13.61', 
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0'
+
+
+]
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -84,10 +92,22 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database
+# DATABASES = {
+#     'default': {
+#         'ENGINE': env('DB_ENGINE', default='django.db.backends.sqlite3'),
+#         'NAME': BASE_DIR / env('DB_NAME', default='db.sqlite3'),
+#     }
+# }
+from decouple import config
+
 DATABASES = {
     'default': {
-        'ENGINE': env('DB_ENGINE', default='django.db.backends.sqlite3'),
-        'NAME': BASE_DIR / env('DB_NAME', default='db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT', default='5432'),
     }
 }
 
