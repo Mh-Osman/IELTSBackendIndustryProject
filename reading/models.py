@@ -1,20 +1,53 @@
 from django.db import models
-
 from users.models import CustomUser
-class ReadingPassageModel(models.Model):
-    Type = [
 
-        ("Academic", "Academic"),
-        ("General", "General"),
+
+# -----------------------------
+# 1️⃣ Reading Exam / Task Model
+# -----------------------------
+class ReadingExamModel(models.Model):
+    EXAM_TYPES = [
+        ('academic', 'Academic'),
+        ('general', 'General Training'),
     ]
+
     title = models.CharField(max_length=255)
-    content = models.TextField()
-    exam_type = models.CharField(max_length=30, choices=Type)
+    description = models.TextField(blank=True, null=True)
+    exam_type = models.CharField(max_length=50, choices=EXAM_TYPES, default='academic')
+    total_passages = models.PositiveIntegerField(default=3)
+    duration_minutes = models.PositiveIntegerField(default=60)  # e.g., 60 mins
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.title
-    
+        return f"{self.title} ({self.exam_type.capitalize()})"
 
+
+# -----------------------------
+# 2️⃣ Reading Passage Model
+# -----------------------------
+class ReadingPassageModel(models.Model):
+    exam = models.ForeignKey(
+        ReadingExamModel,
+        on_delete=models.CASCADE,
+        related_name='passages'
+    )
+
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    order = models.PositiveIntegerField(default=1)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.exam.title} - Passage {self.order}: {self.title}"
+
+
+# -----------------------------
+# 3️⃣ Reading Question Model
+# -----------------------------
 class ReadingQuestionModel(models.Model):
     QUESTION_TYPES = [
         ('true_false_not_given', 'Identifying Information'),
@@ -36,24 +69,107 @@ class ReadingQuestionModel(models.Model):
         related_name='questions'
     )
 
+    question_type = models.CharField(max_length=50, choices=QUESTION_TYPES)
+    question_text = models.TextField()
+    order = models.PositiveIntegerField(default=1)
+    marks = models.FloatField(default=1.0)
 
-class 5(models.Model):
+    def __str__(self):
+        return f"{self.passage.title} - Q{self.order}"
+
+
+# -----------------------------
+# 4️⃣ Reading Option Model
+# -----------------------------
+class ReadingOptionModel(models.Model):
+    """
+    প্রতিটি অপশন আলাদা রো হিসেবে থাকবে।
+    Multiple choice, matching, ইত্যাদি প্রশ্নের জন্য সহজে ব্যবহারযোগ্য।
+    """
     question = models.ForeignKey(
         ReadingQuestionModel,
         on_delete=models.CASCADE,
         related_name='options'
     )
 
-    question_text = models.TextField()    
-    options = models.JSONField()
-    question_answer_one = models.CharField(max_length=255)
-    question_answer_multiple = models.JSONField()
+    text = models.CharField(max_length=255)
+    is_correct = models.BooleanField(default=False)
 
+    def __str__(self):
+        return f"{self.question.id} - {self.text}"
+
+
+# -----------------------------
+# 5️⃣ Reading Answer Model
+# -----------------------------
 class ReadingAnswerModel(models.Model):
-    user = models.ForeignKey(
-        CustomUser,
-        on_delete=models.CASCADE,
-        related_name='reading_answers'
-    )
+    """
+    প্রতিটি ইউজারের দেওয়া উত্তর রেকর্ড রাখবে।
+    """
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reading_answers')
+    exam = models.ForeignKey(ReadingExamModel, on_delete=models.CASCADE, related_name='answers', null=True, blank=True)
+    passage = models.ForeignKey(ReadingPassageModel, on_delete=models.CASCADE, related_name='answers', null=True, blank=True)
+    question = models.ForeignKey(ReadingQuestionModel, on_delete=models.CASCADE, related_name='answers')
 
-    
+    selected_answer = models.CharField(max_length=255, null=True, blank=True)
+    selected_answers_multiple = models.JSONField(blank=True, null=True)
+    is_correct = models.BooleanField(default=False)
+    answered_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.exam and self.passage:
+            self.exam = self.passage.exam
+        elif not self.passage and self.question:
+            self.passage = self.question.passage
+            self.exam = self.question.passage.exam
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.question.id}"
+
+
+# -----------------------------
+# 6️⃣ Reading Evaluation Model
+# -----------------------------
+class ReadingEvaluationModel(models.Model):
+    """
+    ইউজারের পুরো এক্সামের পারফরম্যান্স রেকর্ড রাখবে।
+    """
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reading_evaluations')
+    exam = models.ForeignKey(ReadingExamModel, on_delete=models.CASCADE, related_name='evaluations')
+
+    total_questions = models.PositiveIntegerField(default=0)
+    correct_answers = models.PositiveIntegerField(default=0)
+    band_score = models.FloatField(default=0.0)
+    evaluated_at = models.DateTimeField(auto_now_add=True)
+
+    def calculate_band_score(self):
+        """
+        IELTS official band conversion অনুযায়ী স্কোর ক্যালকুলেট করে।
+        """
+        if self.exam.exam_type == 'academic':
+            mapping = [
+                (39, 9), (37, 8.5), (35, 8), (33, 7.5),
+                (30, 7), (27, 6.5), (23, 6), (19, 5.5),
+                (15, 5), (13, 4.5), (10, 4), (7, 3.5),
+                (5, 3), (3, 2.5)
+            ]
+        else:
+            mapping = [
+                (40, 9), (39, 8.5), (37, 8), (36, 7.5),
+                (34, 7), (32, 6.5), (30, 6), (27, 5.5),
+                (23, 5), (19, 4.5), (15, 4), (12, 3.5),
+                (9, 3), (6, 2.5)
+            ]
+
+        band = 2  # default
+        for min_score, b in mapping:
+            if self.correct_answers >= min_score:
+                band = b
+                break
+
+        self.band_score = band
+        self.save()
+
+    def __str__(self):
+        return f"{self.user.username} - {self.exam.title} ({self.band_score})"
