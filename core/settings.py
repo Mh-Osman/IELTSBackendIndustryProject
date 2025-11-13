@@ -32,6 +32,7 @@ ALLOWED_HOSTS = [
 
 # Application definition
 INSTALLED_APPS = [
+    "unfold",  # must come before django.contrib.admin
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -80,12 +81,13 @@ TEMPLATES = [
         'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
+                "context_processors": [
+                            "django.template.context_processors.debug",
+                            "django.template.context_processors.request",
+                            "django.contrib.auth.context_processors.auth",
+                            "django.contrib.messages.context_processors.messages",
+                        ],
+
         },
     },
 ]
@@ -139,3 +141,52 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 AUTH_USER_MODEL= "users.CustomUser"
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+UNFOLD = {
+    "SITE_TITLE": "IELTS Admin",
+    "SITE_HEADER": "IELTS Management System",
+    "SITE_URL": "/admin/",
+    "SHOW_LOGOUT_LINK": True,
+    "COLLAPSIBLE_SIDEBAR": True,
+    "SHOW_SIDE_NAV": True,
+
+    "STYLES": {
+        "primary": "#2563eb",
+        "accent": "#f59e0b",
+    },
+
+    "APPEARANCE": {
+        "theme": "auto",   # or "dark" to force dark mode
+        "switcher": True,  # show toggle button
+    },
+
+    "DASHBOARD": {
+        "widgets": [
+            [
+                "unfold.widgets.TotalModelWidget",
+                {
+                    "model": "writing.WritingTypeTaskModel",
+                    "title": "Writing Tasks",
+                    "icon": "book-open",
+                },
+            ],
+            [
+                "unfold.widgets.TotalModelWidget",
+                {
+                    "model": "writing.WritingAnswerModel",
+                    "title": "Submitted Answers",
+                    "icon": "file-text",
+                },
+            ],
+            [
+                "unfold.widgets.TotalModelWidget",
+                {
+                    "model": "writing.WritingEvaluationModel",
+                    "title": "Evaluations Completed",
+                    "icon": "award",
+                },
+            ],
+            ["unfold.widgets.RecentActionsWidget"],
+        ]
+    }
+}

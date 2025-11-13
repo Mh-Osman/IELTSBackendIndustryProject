@@ -83,8 +83,8 @@ class ReadingQuestionModel(models.Model):
 # -----------------------------
 class ReadingOptionModel(models.Model):
     """
-    প্রতিটি অপশন আলাদা রো হিসেবে থাকবে।
-    Multiple choice, matching, ইত্যাদি প্রশ্নের জন্য সহজে ব্যবহারযোগ্য।
+    
+    Multiple choice, matching,
     """
     question = models.ForeignKey(
         ReadingQuestionModel,
@@ -104,7 +104,7 @@ class ReadingOptionModel(models.Model):
 # -----------------------------
 class ReadingAnswerModel(models.Model):
     """
-    প্রতিটি ইউজারের দেওয়া উত্তর রেকর্ড রাখবে।
+    user will answer each question and store the response here.
     """
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reading_answers')
     exam = models.ForeignKey(ReadingExamModel, on_delete=models.CASCADE, related_name='answers', null=True, blank=True)
@@ -133,7 +133,7 @@ class ReadingAnswerModel(models.Model):
 # -----------------------------
 class ReadingEvaluationModel(models.Model):
     """
-    ইউজারের পুরো এক্সামের পারফরম্যান্স রেকর্ড রাখবে।
+    performance evaluation after completing the reading exam.
     """
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reading_evaluations')
     exam = models.ForeignKey(ReadingExamModel, on_delete=models.CASCADE, related_name='evaluations')
@@ -145,7 +145,7 @@ class ReadingEvaluationModel(models.Model):
 
     def calculate_band_score(self):
         """
-        IELTS official band conversion অনুযায়ী স্কোর ক্যালকুলেট করে।
+        Calculates the score based on the official IELTS band conversion.
         """
         if self.exam.exam_type == 'academic':
             mapping = [
