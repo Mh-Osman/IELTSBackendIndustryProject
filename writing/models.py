@@ -4,7 +4,6 @@ from django.core.exceptions import ValidationError
 from decimal import Decimal
 from users.models import CustomUser
 from cloudinary_storage.storage import MediaCloudinaryStorage
-import uuid
 
 
 class WritingTypeTaskModel(models.Model):
@@ -18,9 +17,9 @@ class WritingTypeTaskModel(models.Model):
         ("task2", "Task 2"),  # Task 2 is text only
     ]
 
-    uid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.BigAutoField(primary_key=True)
     number = models.PositiveBigIntegerField(unique=True, editable=False)
-    question = models.TextField()
+    question_text = models.TextField()
     image = models.ImageField(
         storage=MediaCloudinaryStorage(),
         upload_to="writing_exam_images/",
@@ -72,7 +71,7 @@ class WritingAnswerModel(models.Model):
 
 
 class WritingEvaluationModel(models.Model):
-    uid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.BigAutoField(primary_key=True)
     number = models.PositiveBigIntegerField(unique=True, editable=False)
     writing_answer = models.OneToOneField(
         WritingAnswerModel,
@@ -140,4 +139,3 @@ class WritingEvaluationModel(models.Model):
 
     def __str__(self):
         return f"Evaluation #{self.number} ({self.total_overall_band})"
-

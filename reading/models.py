@@ -10,7 +10,7 @@ class ReadingExamModel(models.Model):
         ('academic', 'Academic'),
         ('general', 'General Training'),
     ]
-
+    
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     exam_type = models.CharField(max_length=50, choices=EXAM_TYPES, default='academic')
@@ -172,4 +172,4 @@ class ReadingEvaluationModel(models.Model):
         self.save()
 
     def __str__(self):
-        return f"{self.user.username} - {self.exam.title} ({self.band_score})"
+        return f"{self.user.email} - {self.exam.title} ({self.band_score})"
