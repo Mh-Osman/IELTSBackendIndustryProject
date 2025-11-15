@@ -1,3 +1,4 @@
+from django.contrib import admin, messages
 from django.contrib import admin
 from unfold.admin import ModelAdmin, TabularInline
 from .models import WritingTypeTaskModel, WritingAnswerModel, WritingEvaluationModel
@@ -29,7 +30,22 @@ class WritingTypeTaskAdmin(ModelAdmin):
     def question_preview(self, obj):
         return (obj.question[:80] + "...") if len(obj.question) > 80 else obj.question
     question_preview.short_description = "Question Preview"
+    
 
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+
+        #coutn task1 and task2
+        task1_count = WritingTypeTaskModel.objects.filter(task="task1").count()
+        task2_count = WritingTypeTaskModel.objects.filter(task="task2").count()
+
+        #show message
+
+        messages.success(
+
+            request,
+            f"Total Task 1 Questions: {task1_count}, Total Task 2 Questions: {task2_count}"
+        )
 
 # --- Inline for Evaluation inside Writing Answer ---
 class WritingEvaluationInline(TabularInline):

@@ -5,42 +5,47 @@ Django settings for core project.
 from pathlib import Path
 import os
 import environ
+from decouple import config
+from datetime import timedelta
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# ----------------------------------
+# Base Directory
+# ----------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Initialize environ
-env = environ.Env(
-    DEBUG=(bool, False)
-)
+# ----------------------------------
+# ENV Setup
+# ----------------------------------
+env = environ.Env(DEBUG=(bool, False))
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
-# Read .env file from project root
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
-
-# SECURITY
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
+
 ALLOWED_HOSTS = [
-    '10.10.13.61', 
-    'localhost',
-    '127.0.0.1',
-    '0.0.0.0'
-
-
+    "10.10.13.61",
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",
 ]
 
-
-# Application definition
+# ----------------------------------
+# Installed Apps
+# ----------------------------------
 INSTALLED_APPS = [
-    "unfold",  # must come before django.contrib.admin
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'cloudinary_storage',
-    'cloudinary',
+    "unfold",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+
+    # Cloudinary
+    "cloudinary_storage",
+    "cloudinary",
+
+    # Apps
     "users",
     "users_auth",
     "rest_framework",
@@ -48,100 +53,140 @@ INSTALLED_APPS = [
     "temp",
     "writing",
     "reading",
+
+    # WebSocket
+    "channels",
 ]
+
+# ----------------------------------
+# DRF + JWT
+# ----------------------------------
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
 }
-from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Access token 
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=14),    # Refresh token 
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': True,
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
+# ----------------------------------
+# Middleware
+# ----------------------------------
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'core.urls'
+ROOT_URLCONF = "core.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-                "context_processors": [
-                            "django.template.context_processors.debug",
-                            "django.template.context_processors.request",
-                            "django.contrib.auth.context_processors.auth",
-                            "django.contrib.messages.context_processors.messages",
-                        ],
-
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'core.wsgi.application'
+WSGI_APPLICATION = "core.wsgi.application"
+ASGI_APPLICATION = "core.asgi.application"   # REQUIRED for WebSocket
 
+# ----------------------------------
 # Database
-# DATABASES = {
-#     'default': {
-#         'ENGINE': env('DB_ENGINE', default='django.db.backends.sqlite3'),
-#         'NAME': BASE_DIR / env('DB_NAME', default='db.sqlite3'),
-#     }
-# }
-from decouple import config
-
+# ----------------------------------
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT', default='5432'),
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": config("DB_NAME"),
+        "USER": config("DB_USER"),
+        "PASSWORD": config("DB_PASSWORD"),
+        "HOST": config("DB_HOST"),
+        "PORT": config("DB_PORT", default="5432"),
     }
 }
 
-# Password validation
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
+# ----------------------------------
+# Redis Variables from .env
+# ----------------------------------
+REDIS_HOST = config("REDIS_HOST")
+REDIS_PORT = config("REDIS_PORT")
 
-# Internationalization
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
-USE_I18N = True
-USE_TZ = True
+REDIS_CACHE_DB = config("REDIS_CACHE_DB")
+REDIS_CELERY_BROKER_DB = config("REDIS_CELERY_BROKER_DB")
+REDIS_CELERY_RESULT_DB = config("REDIS_CELERY_RESULT_DB")
+REDIS_CHANNEL_LAYER_DB = config("REDIS_CHANNEL_LAYER_DB")
 
-# Static files
-STATIC_URL = 'static/'
-MEDIA_URL = '/media/'
-# MEDIA_ROOT = BASE_DIR / 'media'
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': env("CLOUDINARY_CLOUD_NAME"),
-    'API_KEY': env("CLOUDINARY_API_KEY"),
-    'API_SECRET': env("CLOUDINARY_API_SECRET")
+# ----------------------------------
+# Caching with Redis (DB=1)
+# ----------------------------------
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CACHE_DB}",
+        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+    }
 }
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-AUTH_USER_MODEL= "users.CustomUser"
-# Default primary key field type
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# ----------------------------------
+# Celery Configuration
+# ----------------------------------
+CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CELERY_BROKER_DB}"
+CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CELERY_RESULT_DB}"
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Asia/Dhaka"
+
+# ----------------------------------
+# Channels WebSocket with Redis (DB=4)
+# ----------------------------------
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(REDIS_HOST, int(REDIS_PORT))],
+            "db": int(REDIS_CHANNEL_LAYER_DB),
+        },
+    },
+}
+
+# ----------------------------------
+# Static & Media
+# ----------------------------------
+STATIC_URL = "static/"
+MEDIA_URL = "/media/"
+
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": env("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": env("CLOUDINARY_API_KEY"),
+    "API_SECRET": env("CLOUDINARY_API_SECRET"),
+}
+
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+AUTH_USER_MODEL = "users.CustomUser"
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Unfold Admin UI
 UNFOLD = {
     "SITE_TITLE": "IELTS Admin",
     "SITE_HEADER": "IELTS Management System",
@@ -149,44 +194,6 @@ UNFOLD = {
     "SHOW_LOGOUT_LINK": True,
     "COLLAPSIBLE_SIDEBAR": True,
     "SHOW_SIDE_NAV": True,
-
-    "STYLES": {
-        "primary": "#2563eb",
-        "accent": "#f59e0b",
-    },
-
-    "APPEARANCE": {
-        "theme": "auto",   # or "dark" to force dark mode
-        "switcher": True,  # show toggle button
-    },
-
-    "DASHBOARD": {
-        "widgets": [
-            [
-                "unfold.widgets.TotalModelWidget",
-                {
-                    "model": "writing.WritingTypeTaskModel",
-                    "title": "Writing Tasks",
-                    "icon": "book-open",
-                },
-            ],
-            [
-                "unfold.widgets.TotalModelWidget",
-                {
-                    "model": "writing.WritingAnswerModel",
-                    "title": "Submitted Answers",
-                    "icon": "file-text",
-                },
-            ],
-            [
-                "unfold.widgets.TotalModelWidget",
-                {
-                    "model": "writing.WritingEvaluationModel",
-                    "title": "Evaluations Completed",
-                    "icon": "award",
-                },
-            ],
-            ["unfold.widgets.RecentActionsWidget"],
-        ]
-    }
+    "STYLES": {"primary": "#2563eb", "accent": "#f59e0b"},
+    "APPEARANCE": {"theme": "auto", "switcher": True},
 }

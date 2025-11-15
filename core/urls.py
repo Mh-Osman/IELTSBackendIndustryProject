@@ -22,6 +22,10 @@ import unfold
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/v1/users_auth/", include('users_auth.urls')),
+    path("api/v1/writing/", include("writing.urls")),
+    path("api/v1/reading/", include("reading.urls"))
+    
+    
 ]
 
 # Serve media files during development

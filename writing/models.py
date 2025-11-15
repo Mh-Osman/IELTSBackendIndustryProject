@@ -29,12 +29,15 @@ class WritingTypeTaskModel(models.Model):
     )
     task = models.CharField(max_length=30, choices=TASK_CHOICES)
     exam_type = models.CharField(max_length=30, choices=TYPE_CHOICES)
+     
 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     def clean(self):
         if self.task == "task1" and not self.image:
-            raise ValidationError("Image is required for Task 1 question.")
+            raise ValidationError({"image":"Image is required for Task 1 question."})
         if self.task == "task2" and self.image:
-            raise ValidationError("Image not allowed for Task 2.")
+            raise ValidationError({"image":"Image not allowed for Task 2."})
 
     def save(self, *args, **kwargs):
         if not self.number:
@@ -45,12 +48,65 @@ class WritingTypeTaskModel(models.Model):
                     .get("max_num") or 0
                 )
                 self.number = last_number + 1
-
+   
         self.full_clean()
         super().save(*args, **kwargs)
-
+     
     def __str__(self):
         return f"{self.exam_type} - {self.task} - {self.number}"
+
+
+
+
+# writing/models.py
+from django.db import models
+from django.utils import timezone
+from users.models import CustomUser
+import uuid
+
+
+class WritingPracticeSession(models.Model):
+    SESSION_DURATION_MINUTES = 60
+
+    session_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+
+    task1 = models.ForeignKey(
+        "WritingTypeTaskModel",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="task1_sessions"
+    )
+    task2 = models.ForeignKey(
+        "WritingTypeTaskModel",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="task2_sessions"
+    )
+
+    exam_type = models.CharField(max_length=20)  # Academic / General
+
+    start_time = models.DateTimeField(default=timezone.now)
+    end_time = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def expires_at(self):
+        return self.start_time + timezone.timedelta(minutes=self.SESSION_DURATION_MINUTES)
+
+    @property
+    def is_expired(self):
+        if self.end_time:
+            return True
+        return timezone.now() > self.expires_at()
+
+    def expire(self):
+        if not self.end_time:
+            self.end_time = timezone.now()
+            self.save(update_fields=["end_time"])
+
+    def __str__(self):
+        return f"{self.user.email} - {self.session_id}"
 
 
 class WritingAnswerModel(models.Model):
@@ -65,7 +121,7 @@ class WritingAnswerModel(models.Model):
     task1_answer = models.TextField()
     task2_answer = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
-
+    
     def __str__(self):
         return f"Answer by {self.user} for {self.type_task}"
 
