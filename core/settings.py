@@ -153,7 +153,7 @@ CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_CELERY_RESULT
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
-CELERY_TIMEZONE = "Asia/Dhaka"
+CELERY_TIMEZONE = "UTC"
 
 # ----------------------------------
 # Channels WebSocket with Redis (DB=4)
@@ -197,3 +197,7 @@ UNFOLD = {
     "STYLES": {"primary": "#2563eb", "accent": "#f59e0b"},
     "APPEARANCE": {"theme": "auto", "switcher": True},
 }
+
+# globaly work on utc
+USE_TZ = True
+TIME_ZONE = "UTC"

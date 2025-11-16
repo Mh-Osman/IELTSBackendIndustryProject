@@ -23,18 +23,3 @@ class PracticeExamSerializer(serializers.ModelSerializer):
         model = WritingTypeTaskModel
         fields = "__all__"
 
-
-class WritingPracticeSessionSerializer(serializers.ModelSerializer):
-    task1_data = PracticeExamSerializer(source="task1", read_only=True)
-    task2_data = PracticeExamSerializer(source="task2", read_only=True)
-
-    class Meta:
-        model = WritingPracticeSession
-        fields = [
-            "session_id",
-            "exam_type",
-            "start_time",
-            "end_time",
-            "task1_data",
-            "task2_data"
-        ]

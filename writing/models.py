@@ -29,8 +29,7 @@ class WritingTypeTaskModel(models.Model):
     )
     task = models.CharField(max_length=30, choices=TASK_CHOICES)
     exam_type = models.CharField(max_length=30, choices=TYPE_CHOICES)
-     
-
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     def clean(self):
@@ -109,19 +108,68 @@ class WritingPracticeSession(models.Model):
         return f"{self.user.email} - {self.session_id}"
 
 
+class LockExamSession(models.Model):
+    user = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.CASCADE,
+        related_name="exam_sessions"
+    )
+
+    is_locked = models.BooleanField(default=False)
+
+    # MANY-TO-MANY HERE
+    locked_tasks = models.ManyToManyField(
+        WritingTypeTaskModel,
+        related_name="locked_sessions"
+    )
+
+    start_time = models.DateTimeField(default=timezone.now)
+
+    duration_time = models.IntegerField(default=60)
+
+    @property
+    def expire_at(self):
+        return self.start_time + timedelta(minutes=self.duration_time)
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expire_at
+
+    def __str__(self):
+        return f"Session for {self.user} with {self.locked_tasks.count()} tasks"
+
+    
+    
+
+from django.db import models
+from django.utils import timezone
+from datetime import timedelta
+
+
 class WritingAnswerModel(models.Model):
     type_task = models.ForeignKey(
         WritingTypeTaskModel, on_delete=models.CASCADE, related_name="writing_answers"
     )
     user = models.ForeignKey(
-        CustomUser,
-        on_delete=models.CASCADE,
-        related_name="submitted_writing_answers",
+        CustomUser, on_delete=models.CASCADE, related_name="submitted_writing_answers"
     )
     task1_answer = models.TextField()
     task2_answer = models.TextField()
+
+    # start_time = models.DateTimeField(default=timezone.now)
+    # duration_time = models.IntegerField(default=60)  # minutes
+
+    # created_at = models.DateTimeField(auto_now_add=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
-    
+    # @property
+    # def expire_at(self):
+    #     # dynamically calculate
+    #     return self.start_time + timedelta(minutes=self.duration_time)
+
+    # @property
+    # def is_expired(self):
+    #     return timezone.now() > self.expire_at
+
     def __str__(self):
         return f"Answer by {self.user} for {self.type_task}"
 
