@@ -1,140 +1,95 @@
-from rest_framework.generics import CreateAPIView
-from .models import WritingTypeTaskModel
-from .serializers import UploadQuestionSerializer
-from rest_framework.permissions import IsAuthenticated
-from django.core.exceptions import ValidationError as DjangoValidationError
-from rest_framework import serializers
 import random
-
-class UploadQuestionView(CreateAPIView):
-    queryset = WritingTypeTaskModel.objects.all()
-    serializer_class = UploadQuestionSerializer
-    permission_classes = [IsAuthenticated]
-
-    def perform_create(self, serializer):
-        try:
-            serializer.save()
-        except DjangoValidationError as e:
-            raise serializers.ValidationError(e.message_dict)
-
-
-from django.core.cache import cache 
-from django.utils import timezone
+from rest_framework import viewsets, status
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
+from .models import WritingTypeTask
+from .serializers import WritingTypeTaskSerializer
 from rest_framework.views import APIView
-from rest_framework.throttling import UserRateThrottle
-from .serializers import PracticeExamSerializer
 
+class WritingTypeTaskViewSet(viewsets.ModelViewSet):
+ 
+    queryset = WritingTypeTask.objects.all().order_by("-id")
+    serializer_class = WritingTypeTaskSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser]  # supports file uploads
 
-class FivePerMinuteThrottle(UserRateThrottle):
-    rate = '10/minute'
-
-
-class PracticeExameView(APIView):
-    throttle_classes = [FivePerMinuteThrottle]
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        exam_type = request.data.get("exam_type")  # FIXED
-        locks = LockExamSession.objects.filter(user=request.user)
-
-        try:
-            for l in locks:
-                if l.is_locked:
-                    return Response({
-
-
-                        "message": "you cant do any other writing exam because u have active exam ",
-                    
-                    })
-        except LockExamSession.DoesNotExist:
-            return None
-
+    def create(self, request, *args, **kwargs):
      
-        # Load from cache
-        t1 = cache.get("task1_ids")
-        t2 = cache.get("task2_ids")
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)  # serializer.create will call full_clean()
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-        # If not in cache → load & set
-        if not t1 or not t2:
-            t1 = list(
-                WritingTypeTaskModel.objects
-                .filter(task="task1", exam_type=exam_type)
-                .values_list("id", flat=True)  # FIXED
-            )
+    def update(self, request, *args, **kwargs):
 
-            t2 = list(
-                WritingTypeTaskModel.objects
-                .filter(task="task2", exam_type=exam_type)
-                .values_list("id", flat=True)  # FIXED
-            )
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)  # serializer.update will call full_clean()
+        return Response(serializer.data)
 
-            cache.set("task1_ids", t1, 500)
-            cache.set("task2_ids", t2, 500)
 
-        # Pick random IDs
-        try:
+from .models import WritingTypeTask
+class GetExamSessionView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    def post(self, request):
 
-            random_id1 = random.choice(t1)
-            random_id2 = random.choice(t2)
-        except IndexError:
-            return Response({
+        type=request.data.get("exam_type")
+        if type not in ["Academic","General"]:
+            return Response({"error":"Invalid exam type"}, status=status.HTTP_400_BAD_REQUEST)
+        t1 = WritingTypeTask.objects.filter(writing_task= "task1", writing_type=type).values_list('id', flat=True)
+        t2 = WritingTypeTask.objects.filter(writing_task= "task2", writing_type=type).values_list('id', flat=True)
+        task1= random.choice(t1)
+        task2= random.choice(t2)
+        return Response({"task1":task1,"task2":task2}, status=status.HTTP_200_OK)
+    
 
-                "msg": "invalid",
-            })
-        
 
-        task1 = WritingTypeTaskModel.objects.filter(id=random_id1).first()
-        task2 = WritingTypeTaskModel.objects.filter(id=random_id2).first()
-
-        return Response({
-            "message": "success",
-            "task1_id": random_id1,
-            "task2_id": random_id2,
-            "task1_question": PracticeExamSerializer(task1).data,
-            "task2_question": PracticeExamSerializer(task2).data,
-        })
-
-from rest_framework.views import APIView
-from rest_framework import status
-
-from .models import LockExamSession
-
-class LockPracticeExamView(APIView):
-    permission_classes = [IsAuthenticated]
+from .models import WritingPracticeSession
+from django.db import transaction
+class LockSessionView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def post(self, request):
         user = request.user
-        task_ids = request.data.get("locked_tasks")
 
-        if not task_ids or not isinstance(task_ids, list):
-            return Response({
-                "lock": False,
-                "message": "locked_tasks field must be a list ex: [1,2]"
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Fetch tasks
-        tasks = WritingTypeTaskModel.objects.filter(id__in=task_ids)
-
-        if tasks.count() != len(task_ids):
-            return Response({
-                "lock": False,
-                "message": "One or more tasks are invalid"
-            })
         
-        # Create one session
-        session = LockExamSession.objects.create(
-            user=user,
-            is_locked=True
-        )
+        if not request.user or not request.user.is_authenticated:
+            return Response({"detail": "Authentication required to lock a session."},
+                            status=status.HTTP_401_UNAUTHORIZED)
 
-        # Assign tasks
-        session.locked_tasks.set(tasks)
+        locked_tasks = request.data.get("locked_tasks", [])
+        if not isinstance(locked_tasks, list):
+            return Response({"error": "locked_tasks must be a list."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        
+        try:
+            locked_ids = [int(i) for i in locked_tasks]
+        except (ValueError, TypeError):
+            return Response({"error": "locked_tasks must be a list of integer IDs."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        
+        tasks_qs = WritingTypeTask.objects.filter(id__in=locked_ids)
+        found_ids = set(tasks_qs.values_list("id", flat=True))
+        missing = set(locked_ids) - found_ids
+        if missing:
+            return Response({"error": "Some task IDs were not found.", "missing_ids": list(missing)},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            session = WritingPracticeSession.objects.create(user=user)
+            session.task_list.set(tasks_qs)
+            session.is_locked=True
 
         return Response({
-            "locked": True,
-            "duration": session.duration_time,
-            "expire_at": session.expire_at,
-            "tasks": list(tasks.values("id", "task"))
-        })
+            "session_id": session.id,
+            "locked_task_ids": list(found_ids)
+        }, status=status.HTTP_201_CREATED)
+        
+
 

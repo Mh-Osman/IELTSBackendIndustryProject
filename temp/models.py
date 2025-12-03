@@ -23,3 +23,11 @@ class AudioFile(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Student(models.Model):
+    name = models.CharField(max_length=100)
+
+class Course(models.Model):
+    name = models.CharField(max_length=100)
+    students = models.ManyToManyField(Student)

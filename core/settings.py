@@ -33,7 +33,7 @@ ALLOWED_HOSTS = [
 # Installed Apps
 # ----------------------------------
 INSTALLED_APPS = [
-    "unfold",
+    # "unfold",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -186,17 +186,17 @@ AUTH_USER_MODEL = "users.CustomUser"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Unfold Admin UI
-UNFOLD = {
-    "SITE_TITLE": "IELTS Admin",
-    "SITE_HEADER": "IELTS Management System",
-    "SITE_URL": "/admin/",
-    "SHOW_LOGOUT_LINK": True,
-    "COLLAPSIBLE_SIDEBAR": True,
-    "SHOW_SIDE_NAV": True,
-    "STYLES": {"primary": "#2563eb", "accent": "#f59e0b"},
-    "APPEARANCE": {"theme": "auto", "switcher": True},
-}
+# # Unfold Admin UI
+# UNFOLD = {
+#     "SITE_TITLE": "IELTS Admin",
+#     "SITE_HEADER": "IELTS Management System",
+#     "SITE_URL": "/admin/",
+#     "SHOW_LOGOUT_LINK": True,
+#     "COLLAPSIBLE_SIDEBAR": True,
+#     "SHOW_SIDE_NAV": True,
+#     "STYLES": {"primary": "#2563eb", "accent": "#f59e0b"},
+#     "APPEARANCE": {"theme": "auto", "switcher": True},
+# }
 
 # globaly work on utc
 USE_TZ = True
