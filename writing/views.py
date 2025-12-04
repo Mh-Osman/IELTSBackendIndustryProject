@@ -56,7 +56,9 @@ class LockSessionView(APIView):
     def post(self, request):
         user = request.user
 
-        
+        if WritingPracticeSession.objects.filter(user=user, is_locked=True):
+            WritingPracticeSession.objects.filter(user=user, is_locked=True).delete()
+
         if not request.user or not request.user.is_authenticated:
             return Response({"detail": "Authentication required to lock a session."},
                             status=status.HTTP_401_UNAUTHORIZED)
@@ -82,14 +84,78 @@ class LockSessionView(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
+            
             session = WritingPracticeSession.objects.create(user=user)
             session.task_list.set(tasks_qs)
             session.is_locked=True
+            session.save()
+            print("hello")
 
         return Response({
             "session_id": session.id,
             "locked_task_ids": list(found_ids)
         }, status=status.HTTP_201_CREATED)
         
+
+from .models import WritingAnswer
+class SubmitAnswerView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def post(self, request):
+        user = request.user
+        task1_id = request.data.get("task1_id")
+        task2_id = request.data.get("task2_id")
+        answer_text1 = request.data.get("answer_text1", "")
+        answer_text2 = request.data.get("answer_text2", "")
+        
+        last_session = WritingPracticeSession.objects.filter(user=user, is_locked=True).first()
+        if not last_session:
+            return Response({"error": "No locked session found for user."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if last_session.is_expired():
+            return Response({"error": "The session has expired."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            task1 = WritingTypeTask.objects.get(id=task1_id, writing_task="task1")
+            
+            task2 = WritingTypeTask.objects.get(id=task2_id, writing_task="task2")
+        except WritingTypeTask.DoesNotExist:
+            return Response({"error": "One or both task IDs are invalid."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        if WritingAnswer.objects.filter(user=user, session=last_session).exists():
+            return Response({"error": "Answers for this session have already been submitted."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        writing_answer = WritingAnswer.objects.create(
+            user=user,
+            session=last_session,
+            task1=answer_text1,
+            task2=answer_text2,
+            task1_type=task1,
+            task2_type=task2
+        )   
+
+        return Response({
+            "message": "Answers submitted successfully.",
+            "answer_id": writing_answer.id
+        }, status=status.HTTP_201_CREATED)
+    
+
+
+        
+import writing.writing_evaluation
+def evaluation(self, request):
+    question_data = {
+        "task1_prompt": "Describe the graph showing the population growth over the last century.",
+        "task2_question": "Some people believe that technology has made our lives more complex. Discuss both views and give your opinion."
+         
+    }
+    res = writing.writing_evaluation.evaluate_writing_answer(
+
+        "abc" , "def", 
+    )
+
 
 

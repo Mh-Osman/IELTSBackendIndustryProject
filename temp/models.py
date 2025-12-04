@@ -31,3 +31,11 @@ class Student(models.Model):
 class Course(models.Model):
     name = models.CharField(max_length=100)
     students = models.ManyToManyField(Student)
+
+
+class authors(models.Model):
+    name = models.CharField(max_length=100)
+
+class books(models.Model):
+    title = models.CharField(max_length=100)
+    author = models.ForeignKey(authors, on_delete=models.CASCADE)
