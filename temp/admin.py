@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import MediaFile, AudioFile,Student,Course,authors,books
+from .models import Student,Course,authors,books
 
 # admin.site.register(MediaFile)
 # admin.site.register(AudioFile)

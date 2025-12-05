@@ -1,6 +1,5 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-from cloudinary_storage.storage import MediaCloudinaryStorage
 
 from users.models import CustomUser
 
@@ -23,12 +22,10 @@ class WritingTypeTask(models.Model):
     )
 
     image = models.ImageField(
-        storage=MediaCloudinaryStorage(),
-        upload_to="writing_images/",
-        null=True,
+        upload_to="writing_task_images/",
         blank=True,
-        max_length=255,
-        help_text="Required for Task 1 (upload an image)."
+        null=True,
+       help_text="Required for Task 1 (e.g., graph/chart images).",
     )
 
     text = models.TextField(blank=True, default="")
@@ -192,6 +189,11 @@ class WritingEvaluation(models.Model):
 
     # FINAL
     overall_writing_band = models.FloatField(null=True, blank=True)
+
+
+    #feedback
+    strengths = models.JSONField(null=True, blank=True)  # stores list of strings
+    areas_for_improvement = models.JSONField(null=True, blank=True)  # stores list of strings
 
     def ielts_round(self, score):
         decimal = score - int(score)

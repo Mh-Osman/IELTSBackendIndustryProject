@@ -146,16 +146,41 @@ class SubmitAnswerView(APIView):
 
         
 import writing.writing_evaluation
-def evaluation(self, request):
-    question_data = {
-        "task1_prompt": "Describe the graph showing the population growth over the last century.",
-        "task2_question": "Some people believe that technology has made our lives more complex. Discuss both views and give your opinion."
-         
-    }
-    res = writing.writing_evaluation.evaluate_writing_answer(
 
-        "abc" , "def", 
+class GetAIWritingEvaluationView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def post(self, request):
+        answer_id = request.data.get("answer_id")
+   
+        try:
+            writing_answer = WritingAnswer.objects.get(id=answer_id)
+        except WritingAnswer.DoesNotExist:
+            return Response({"error": "WritingAnswer not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        task1_text = writing_answer.task1
+       
+        task1_image= writing_answer.task1_type.image
+        image_path = task1_image.path
+        print("Image Path:", image_path)  # Debugging line
+        with open(image_path, "rb") as img_file:
+            image_bytes = img_file.read()
+
+        result = writing.writing_evaluation.generate_ielts_feedback(
+        task1_answer=writing_answer.task1,
+        task2_answer=writing_answer.task2,
+        question_data={
+            "task1_prompt": writing_answer.task1_type.text,
+            "task2_question": writing_answer.task2_type.text
+        },
+        task1_image_bytes=image_bytes
     )
+
+
+
+        return Response({"message": "Evaluation in progress.",
+                         "result": result}, status=status.HTTP_200_OK)
+
 
 
 
