@@ -1,48 +1,72 @@
-# from django.db import models
-# from users.models import CustomUser
+from django.db import models
+from users.models import CustomUser
 
 
-# # -----------------------------
-# # 1️⃣ Reading Exam / Task Model
-# # -----------------------------
-# class ReadingExamModel(models.Model):
-#     EXAM_TYPES = [
-#         ('academic', 'Academic'),
-#         ('general', 'General Training'),
-#     ]
+# -----------------------------
+# 1️⃣ Reading Exam / Task Model
+# -----------------------------
+class ReadingExamModel(models.Model):
+    EXAM_TYPES = [
+        ('academic', 'Academic'),
+        ('general', 'General Training'),
+    ]
     
-#     title = models.CharField(max_length=255)
-#     description = models.TextField(blank=True, null=True)
-#     exam_type = models.CharField(max_length=50, choices=EXAM_TYPES, default='academic')
-#     total_passages = models.PositiveIntegerField(default=3)
-#     duration_minutes = models.PositiveIntegerField(default=60)  # e.g., 60 mins
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    exam_type = models.CharField(max_length=50, choices=EXAM_TYPES, default='academic')
+    total_passages = models.PositiveIntegerField(default=3)
+    duration_minutes = models.PositiveIntegerField(default=60)  # e.g., 60 mins
 
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-#     def __str__(self):
-#         return f"{self.title} ({self.exam_type.capitalize()})"
+    def __str__(self):
+        return f"{self.title} ({self.exam_type.capitalize()})"
 
+    
+# -----------------------------
+# 2️⃣ Reading Passage Model
+# -----------------------------
+class ReadingPassageModel(models.Model):
+    exam = models.ForeignKey(
+        ReadingExamModel,
+        on_delete=models.CASCADE,
+        related_name='passages'
+    )
 
-# # -----------------------------
-# # 2️⃣ Reading Passage Model
-# # -----------------------------
-# class ReadingPassageModel(models.Model):
-#     exam = models.ForeignKey(
-#         ReadingExamModel,
-#         on_delete=models.CASCADE,
-#         related_name='passages'
-#     )
+    part_type = [
+    ("Number", "Number"),
+    ("Alphabetical", "Alphabetical"),
+     ("None", "None"),
+    ]
+    section_title = models.CharField(
 
-#     title = models.CharField(max_length=255)
-#     content = models.TextField()
-#     order = models.PositiveIntegerField(default=1)
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="section no. like Section 1, Section 2 etc."
+    )
+    pre_passage_guide= models.TextField(
+        null=True,
+        blank=True,
+        help_text="Instructions or guide before the passage. like 'Read the passage and answer the questions below.'"
+    )
 
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
+    passage= models.JSONField(
 
-#     def __str__(self):
-#         return f"{self.exam.title} - Passage {self.order}: {self.title}"
+        default=dict,
+        help_text="{ 'headline': 'the passage', 'part': '1/A/None', 'content': 'passage text' }",
+    )
+    
+
+    
+    order = models.PositiveIntegerField(default=1)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # def __str__(self):
+    #     return f"{self.exam.title} - Passage {self.order}: {self.title}"
 
 
 # # -----------------------------
@@ -173,3 +197,5 @@
 
 #     def __str__(self):
 #         return f"{self.user.email} - {self.exam.title} ({self.band_score})"
+
+

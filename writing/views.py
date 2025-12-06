@@ -1,4 +1,5 @@
 import random
+from unittest import result
 from rest_framework import viewsets, status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
@@ -167,19 +168,21 @@ class GetAIWritingEvaluationView(APIView):
             image_bytes = img_file.read()
 
         result = writing.writing_evaluation.generate_ielts_feedback(
-        task1_answer=writing_answer.task1,
-        task2_answer=writing_answer.task2,
+        task1_text=writing_answer.task1,#task1 answer
+        task2_text=writing_answer.task2,
         question_data={
             "task1_prompt": writing_answer.task1_type.text,
             "task2_question": writing_answer.task2_type.text
         },
         task1_image_bytes=image_bytes
-    )
+     )
+        
+        print(result)
 
-
+      
 
         return Response({"message": "Evaluation in progress.",
-                         "result": result}, status=status.HTTP_200_OK)
+                         }, status=status.HTTP_200_OK)
 
 
 

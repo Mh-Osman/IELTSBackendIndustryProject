@@ -35,6 +35,8 @@ class Course(models.Model):
 
 class authors(models.Model):
     name = models.CharField(max_length=100)
+    qualifion = models.JSONField(null=True, blank=True)
+    qualification = models.JSONField(null=True, blank=True, default=dict)
 
 class books(models.Model):
     title = models.CharField(max_length=100)
