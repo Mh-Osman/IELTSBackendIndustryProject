@@ -23,7 +23,58 @@ class ReadingExamModel(models.Model):
     def __str__(self):
         return f"{self.title} ({self.exam_type.capitalize()})"
 
+
+class ReadingPassage(models.Model):
+    exam = models.ForeignKey(ReadingExamModel,on_delete=models.CASCADE)
+    headline = models.CharField(max_length=255)
+    pre_note = models.TextField(blank=True, null=True)
+
+class PassagePart(models.Model):
+    passage=models.ForeignKey(ReadingPassage,on_delete=models.CASCADE)
+    serial_no = models.PositiveIntegerField()
+    part_type = models.CharField(
+    max_length=2,
+    help_text="e.g., '1', 'A', 'None' "
+    )
+    passage_title = models.CharField(max_length=255)
+    content = models.TextField()
+
+
+class ReadingQuestionRange(models.Model):
+    exam = models.ForeignKey(ReadingExamModel,on_delete=models.CASCADE, default=None)
+    text = models.CharField(
+        max_length=255,
+        help_text="e.g., 'Questions 1-5', 'Questions A-C'",
+        null=True,
+        blank=True
+    )
+    serial_no = models.PositiveIntegerField()
+class ReadingMcq(models.Model):
+     range = models.ForeignKey(ReadingQuestionRange,on_delete=models.CASCADE)
+     serial_no = models.PositiveIntegerField(unique=True)
+     question = models.TextField()
     
+     
+class ReadingMcqOption(models.Model):
+    mcq = models.ForeignKey(ReadingMcq, on_delete=models.CASCADE, related_name='mcq_options')
+    text = models.CharField(max_length=255, blank=True, null=True)
+    file = models.FileField(upload_to='reading/options/', blank=True, null=True)
+    is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.text if self.text else f"Option File ({self.file})"
+
+
+class TFNGQuestion(models.Model):
+    range = models.ForeignKey(ReadingQuestionRange,on_delete=models.CASCADE)
+    serial_no = models.PositiveIntegerField(unique=True)
+    statement = models.TextField()
+    ANSWER_CHOICES = [
+        ('true', 'True'),
+        ('false', 'False'),
+        ('not_given', 'Not Given'),
+    ]
+    correct_answer = models.CharField(max_length=10, choices=ANSWER_CHOICES)
 # -----------------------------
 # 2️⃣ Reading Passage Model
 # -----------------------------
@@ -197,5 +248,6 @@ class ReadingPassageModel(models.Model):
 
 #     def __str__(self):
 #         return f"{self.user.email} - {self.exam.title} ({self.band_score})"
+
 
 

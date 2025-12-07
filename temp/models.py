@@ -41,3 +41,25 @@ class authors(models.Model):
 class books(models.Model):
     title = models.CharField(max_length=100)
     author = models.ForeignKey(authors, on_delete=models.CASCADE)
+
+class a(models.Model):
+    book = models.ForeignKey(books, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+class Chapter(models.Model):
+    book = models.ForeignKey(books, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+class mcq(models.Model):
+    question = models.CharField(max_length=255)
+    options = models.JSONField(default=list)  # List of options
+    correct_answer = models.CharField(max_length=255)  # Correct option
+
+from django.db import models
+
+class Product(models.Model):
+    name = models.CharField(max_length=200)
+    price = models.DecimalField(max_digits=8, decimal_places=2)
+    metadata = models.JSONField(blank=True, null=True)  # list/dict data রাখার জন্য
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name

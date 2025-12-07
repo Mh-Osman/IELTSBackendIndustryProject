@@ -56,6 +56,8 @@ INSTALLED_APPS = [
 
     # WebSocket
     "channels",
+
+    "nested_admin",
 ]
 
 # ----------------------------------
